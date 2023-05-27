@@ -5,7 +5,12 @@
       <div>
         <base-button @click="loadExperiences">Load Submitted Experiences</base-button>
       </div>
-      <ul>
+
+        <loading-message v-if="loading"></loading-message>
+        <p v-else-if="!loading && error">{{ error }}</p>
+        <h3 v-else-if="noData">No user experiences found. You can start adding some in the form above!</h3>    
+
+      <ul v-else> 
         <survey-result
           v-for="result in results"
           :key="result.id"
@@ -19,24 +24,32 @@
 
 <script>
 import SurveyResult from './SurveyResult.vue';
+import LoadingMessage from '../UI/LoadingMessage.vue'
 
 export default {
   components: {
     SurveyResult,
+    LoadingMessage
   },
   data() {
     return {
-      results: []
+      results: [],
+      loading: false,
+      error: null
     }
   },
   methods: {
     loadExperiences() {
+      this.loading = true
+      this.error = null
+   
       fetch('https://vue-hhtp-demo-71d8c-default-rtdb.europe-west1.firebasedatabase.app/surveys.json').then((response) => {
         if (response.ok) {
           return response.json()
         }
       })
       .then((data) => {
+        this.loading = false
         const results = []
         for (const id in data) {
           results.push({
@@ -46,7 +59,20 @@ export default {
         }
         this.results = results
       })
+      .catch((error) => {
+        console.log(error)
+        this.loading = false 
+        this.error = 'Failed to fetch data - please try again'
+      })
     }
+  },
+  computed: {
+    noData() {
+      return !this.loading && (!this.results || this.results.length === 0)
+    }
+  },
+  mounted() {
+    this.loadExperiences()
   }
 };
 </script>
